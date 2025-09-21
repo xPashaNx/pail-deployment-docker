@@ -1,0 +1,118 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - --providers.docker=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=${EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik/acme.json:/letsencrypt/acme.json"
+    labels:
+      - "traefik.enable=true"
+    restart: unless-stopped
+    networks:
+      - pail-trading-net
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: clickhouse
+    volumes:
+      - ./var/clickhouse_data:/var/lib/clickhouse
+    environment:
+      - CLICKHOUSE_DB=default
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=${CH_PASS}
+    healthcheck:
+      test: [ "CMD", "clickhouse-client", "--query", "SELECT 1" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - pail-trading-net
+
+  nats:
+    image: nats:2.10
+    container_name: nats
+    command: [ "-js", "-m", "8222", "-p", "4222" ]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    restart: unless-stopped
+    networks:
+      - pail-trading-net
+
+  nats-cli:
+    image: natsio/nats-box
+    container_name: nats-cli
+    depends_on:
+      - nats
+    stdin_open: true
+    tty: true
+    networks:
+      - pail-trading-net
+
+  candle-collector:
+    build:
+      context: ../pail-candle-collector
+      dockerfile: docker/Dockerfile.prod
+    container_name: collector
+    environment:
+      - APP_ENV=production
+      - CONFIG_PATH=/app/config/config.yaml
+    depends_on:
+      - clickhouse
+      - nats
+    restart: unless-stopped
+    networks:
+      - pail-trading-net
+
+  ta-api:
+    build:
+      context: ../pail-ta-api
+      dockerfile: Dockerfile.prod
+    container_name: ta-api
+    ports:
+      - "5000:5000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ta-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.ta-api.entrypoints=websecure"
+      - "traefik.http.routers.ta-api.tls.certresolver=le"
+      - "traefik.http.middlewares.api-auth.basicauth.users=${BASICAUTH_USER}:${BASICAUTH_HASH}"
+      - "traefik.http.routers.ta-api.middlewares=api-auth"
+    restart: unless-stopped
+    networks:
+      - pail-trading-net
+
+  ta-frontend:
+    build:
+      context: ../pail-ta-frontend
+      dockerfile: Dockerfile
+    container_name: ta-frontend
+    ports:
+      - "5173:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.front.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.front.entrypoints=websecure"
+      - "traefik.http.routers.front.tls.certresolver=le"
+      - "traefik.http.middlewares.front-auth.basicauth.users=${BASICAUTH_USER}:${BASICAUTH_HASH}"
+      - "traefik.http.routers.front.middlewares=front-auth"
+    restart: unless-stopped
+    networks:
+      - pail-trading-net
+
+networks:
+  pail-trading-net:
+    name: pail-trading-net
+    external: true

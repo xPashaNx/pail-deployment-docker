@@ -25,6 +25,9 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:24.8
     container_name: clickhouse
+    ports:
+      - "9000:9000"
+      - "8123:8123"
     volumes:
       - ./var/clickhouse_data:/var/lib/clickhouse
     environment:
@@ -37,6 +40,20 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
+    networks:
+      - pail-trading-net
+
+  goose:
+    container_name: goose
+    image: kukymbr/goose-docker
+    volumes:
+      - ../pail-candle-collector/migrations:/migrations
+    depends_on:
+      - clickhouse
+    environment:
+      GOOSE_DRIVER: clickhouse
+      GOOSE_DBSTRING: "clickhouse://default:${CH_PASS}@clickhouse:9000/default"
+    #    command: [ "-dir", "/migrations", "up" ]
     networks:
       - pail-trading-net
 
@@ -97,7 +114,7 @@ services:
   ta-frontend:
     build:
       context: ../pail-ta-frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: ta-frontend
     ports:
       - "5173:80"

@@ -102,11 +102,9 @@ services:
       - "5000:5000"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.ta-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.ta-api.entrypoints=websecure"
-      - "traefik.http.routers.ta-api.tls.certresolver=le"
-      - "traefik.http.middlewares.api-auth.basicauth.users=${BASICAUTH_USER}:${BASICAUTH_HASH}"
-      - "traefik.http.routers.ta-api.middlewares=api-auth"
+      - "traefik.http.routers.front.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.front.entrypoints=web"
+      - "traefik.http.services.front.loadbalancer.server.port=80"
     restart: unless-stopped
     networks:
       - pail-trading-net
@@ -121,9 +119,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.front.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.front.entrypoints=websecure"
-      - "traefik.http.services.front.loadbalancer.server.port=80"
       - "traefik.http.routers.front.entrypoints=web"
+      - "traefik.http.services.front.loadbalancer.server.port=80"
     restart: unless-stopped
     networks:
       - pail-trading-net

@@ -7,7 +7,7 @@ up:
 down:
 	docker compose down --remove-orphans
 
-certs-generate:
+generate-certs:
 	mkdir -p ./certs && \
     openssl req -x509 -nodes -newkey rsa:2048 \
       -keyout ./certs/selfsigned.key \

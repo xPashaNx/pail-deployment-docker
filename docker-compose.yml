@@ -2,19 +2,14 @@ services:
   traefik:
     image: traefik:v3.1
     command:
-      - --providers.docker=true
-      - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.le.acme.tlschallenge=true
-      - --certificatesresolvers.le.acme.email=${EMAIL}
-      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --configFile=/etc/traefik/traefik.yml
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./traefik/acme.json:/letsencrypt/acme.json"
-      - "./letsencrypt/acme.json:/letsencrypt/acme.json"
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./certs:/certs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
       - "traefik.enable=true"
     restart: unless-stopped
@@ -127,9 +122,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.front.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.front.entrypoints=websecure"
-      - "traefik.http.routers.front.tls.certresolver=le"
-      - "traefik.http.middlewares.front-auth.basicauth.users=${BASICAUTH_USER}:${BASICAUTH_HASH}"
-      - "traefik.http.routers.front.middlewares=front-auth"
+      - "traefik.http.services.front.loadbalancer.server.port=80"
+      - "traefik.http.routers.front.entrypoints=web"
     restart: unless-stopped
     networks:
       - pail-trading-net

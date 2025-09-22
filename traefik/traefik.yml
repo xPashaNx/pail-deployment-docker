@@ -1,0 +1,15 @@
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    exposedByDefault: false
+
+# ⬇️ TLS с самоподписанным сертификатом
+tls:
+  certificates:
+    - certFile: "/certs/selfsigned.crt"
+      keyFile: "/certs/selfsigned.key"

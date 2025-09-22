@@ -14,3 +14,6 @@ certs-generate:
       -out ./certs/selfsigned.crt \
       -days 365 \
       -subj "/CN=$(hostname -I | awk '{print $1}')"
+
+get-ip:
+	hostname -I | awk '{print $1}'

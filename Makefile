@@ -1,5 +1,8 @@
 build:
-	docker compose build
+	docker compose build --no-cache
+
+network-create:
+	docker network create pail-trading-net || true
 
 up:
 	docker compose up -d

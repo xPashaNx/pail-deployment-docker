@@ -1,20 +1,20 @@
 services:
-  traefik:
-    image: traefik:v3.1
-    command:
-      - --configFile=/etc/traefik/traefik.yml
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./certs:/certs:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      - "traefik.enable=true"
-    restart: unless-stopped
-    networks:
-      - pail-trading-net
+#  traefik:
+#    image: traefik:v3.1
+#    command:
+#      - --configFile=/etc/traefik/traefik.yml
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+#      - ./certs:/certs:ro
+#      - /var/run/docker.sock:/var/run/docker.sock:ro
+#    labels:
+#      - "traefik.enable=true"
+#    restart: unless-stopped
+#    networks:
+#      - pail-trading-net
 
   clickhouse:
     image: clickhouse/clickhouse-server:24.8
